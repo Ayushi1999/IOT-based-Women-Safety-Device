@@ -1,0 +1,57 @@
+String myMessage = "TROUBLE:%207696788553%20if%20message%20send%20ok%20then%20any%20command%20%20%20LATITUDE:-%2030.516028,%20%20LONGITUDE:-%2076.656544";
+int panicButton = 2;
+int ackBuzzer = 13;
+boolean isAckRxd = false;
+void setup() 
+{
+  Serial.begin(115200);
+  Serial.println("AT+CWJAP=\"Android\",\"configurekar\"\r\n");
+  delay(5000);
+  pinMode(panicButton, INPUT);
+  pinMode(ackBuzzer, OUTPUT);
+}
+
+void loop()
+{
+  if (digitalRead(panicButton) == HIGH)
+    visitServer("GET /IoT/ackWriter.php?email=bhavikabansal099@gmail.com&ack="+myMessage+" HTTP/1.1\r\n");
+  else
+    visitServer("GET /IoT/cmdReader.php?email=bhavikabansal099@gmail.com HTTP/1.1\r\n");
+
+  if(isAckRxd)
+  {
+    visitServer("GET /IoT/ackWriter.php?email=bhavikabansal099@gmail.com&ack=%20 HTTP/1.1\r\n");
+    isAckRxd = false;
+  }
+}
+
+void visitServer(String httpURL)
+{
+  String serverLink;
+  serverLink = "AT+CIPSTART=\"TCP\",\"www.logitekprojects.com\",80";
+  Serial.println(serverLink);
+  delay(1000);  
+  serverLink = httpURL;
+  serverLink += "Host: www.logitekprojects.com\r\n\r\n";
+  String linkLength = "AT+CIPSEND=";
+  linkLength += serverLink.length();
+  Serial.println(linkLength);
+  delay(1000);
+  Serial.print(serverLink);
+}
+
+void serialEvent()   
+{
+  while(Serial.available() > 0)
+  {
+    String fromNetwork;
+    fromNetwork = Serial.readString();
+    if(fromNetwork.indexOf("ok") > -1)
+    {
+      digitalWrite(ackBuzzer, HIGH);
+      delay(2000);
+      digitalWrite(ackBuzzer, LOW); 
+      isAckRxd = true;
+    }
+  }
+}
